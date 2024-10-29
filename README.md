@@ -85,4 +85,9 @@ The application will default for visualizing data to a selected column, and clas
   * to minus thirty three days from system date for monthly data (convention MM)
   * to minus thirteen days from system date for 10 daily data (convention MMTT where TT is 01,11,21)
 
+If a column contains the word 'RAIN' a graduated color scheme based on blue will be generated. The class for zero rainfall will be a separate class.
+If a column contains the word 'TEMP' a graduated color schema based on red will be generated
+If a column contains the word 'ABSORBED' a graduated color schema based on green well be generated
+If a column contains the word 'SPI' or 'ANOMALY' a fixed statistical color scheme will be generated from -2 and lower to +2 and higher.
+
 Note that Table and Column names should not be quoted or use other characters than the 26 base latin characters and/or numbers 0 to 10.
