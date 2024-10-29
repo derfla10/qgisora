@@ -81,9 +81,10 @@ insert into user_sdo_geom_metadata select 'GRID_1DD_MONTHLY_ACTUAL',column_name,
      from    all_sdo_geom_metadata where table_name = 'GRID_1DD' and column_name = 'CORR_CELL'
 
 The application will default for visualizing data to a selected column, and classify the minimum and maximum accordingly. 
-  * to minus  three days from system date for daily data (convention MMDD)
-  * to minus thirty three days from system date for monthly data (convention MM)
-  * to minus thirteen days from system date for 10 daily data (convention MMTT where TT is 01,11,21)
+  * to minus  six days from system date for daily data (convention MMDD)
+  * to minus thirtysix days from system date for monthly data (convention MM)
+  * to minus sixteen days from system date for 10 daily data (convention MMTT where TT is 01,11,21)
+This implies that the system expects data to be integrated with a maximum of six days delay.
 
 If a column contains the word 'RAIN' a graduated color scheme based on blue will be generated. The class for zero rainfall will be a separate class.
 If a column contains the word 'TEMP' a graduated color schema based on red will be generated
