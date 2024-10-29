@@ -2,19 +2,19 @@ import sys
 import cx_Oracle
 from qgis.PyQt import QtGui
 from qgis.utils import iface
-
 ########################################################
 myhost     = "localhost"
-mydb       = "world"
+mydb       = "oracledb"
 myport     = "1520"
 myusername = "QGISUSER"
 mypassword = "password"
+displaymsg = False 
+########################################################
 myconnectdb = myusername+"/"+mypassword+"@"+myhost+":"+myport+"/"+mydb
 oraconn = cx_Oracle.connect(myconnectdb)
 iface.messageBar().pushMessage("Database", "Succesfully connected to "+myusername+" at "+mydb, level=Qgis.Info)
 print (oraconn)
 timeselect = False
-
 qlist    = []
 qid       = QInputDialog()
 qmode    = QLineEdit.Normal
@@ -28,7 +28,6 @@ stablelistrow = stablelist.fetchall()
 for stable in stablelistrow:
 	qlist.append(stable[0])
 qtext, qok = QInputDialog.getItem(qid, qtitle, qlabel,qlist)
-#qtext, qok = QInputDialog.getText(qid, qtitle, qlabel, qmode, qdefault)
 
 if (qok):
 	mytable_name = qtext
@@ -38,10 +37,11 @@ if (qok):
 	getownerrow = getowner.fetchone()
 	myowner = getownerrow[0]
 
-if (("GRID_" in mytable_name) and (len(mytable_name) > 11)):
+if (("GRID_" in mytable_name) and ("DD" in mytable_name) and (len(mytable_name) > 11)):
 	myspatial_table_name = mytable_name.split('DD_')[0] + "DD"
 	sqlconstraint = "SELECT column_name FROM all_constraints c, all_ind_columns i WHERE c.constraint_name = i.index_name AND c.constraint_type = 'P' AND c.owner = i.table_owner AND c.table_name = UPPER('"+mytable_name+"') order by column_position asc"
-	print(sqlconstraint)
+	if displaymsg:
+		print(sqlconstraint)
 	constraint_return = oraconn.cursor()
 	constraint_return.execute(sqlconstraint)
 	constraint_row = constraint_return.fetchall()
@@ -53,19 +53,18 @@ if (("GRID_" in mytable_name) and (len(mytable_name) > 11)):
 			myyear_col = rel[0]
 		else:
 			myrel_column_name = rel[0]
-	print("Found relation column with "+myrel_column_name)
-	# print(timeselect)
+	if displaymsg:
+		print("Found relation column with "+myrel_column_name)
 	sql = "SELECT distinct '"+myowner+"' || ' ' || initcap(replace('"+mytable_name+"','_',' ')) layer_name, 'POLYGON' , to_char(srid) srid, column_name  FROM all_sdo_geom_metadata WHERE owner = 'GRIDREF' and table_name = UPPER('"+myspatial_table_name+"') order by column_name desc"
 	if (myyear_col == "YEAR"):
 		spatialsql = "SELECT id, corr_cell, f.* from gridref."+myspatial_table_name+", " + myowner + "." + mytable_name + " f where id = f."+myrel_column_name+" and f.year = to_char(sysdate -30,'YYYY')"
 	else:
 		spatialsql = "SELECT id, corr_cell, f.* from gridref."+myspatial_table_name+", " + myowner + "." + mytable_name + " f where id = f."+myrel_column_name
 else:
-	sql = "SELECT owner || ' ' || initcap(replace(table_name,'_',' ')) layer_name, decode(column_name,'POLYGONS','POLYGON','CELL','POLYGON','CORR_CELL','POLYGON','CELLS','POLYGON','LINES','POLYLINE','SHAPE','POLYGON','DIRECTEDLINE','POLYLINE','LINE','POLYLINE','LINE_SIMPLE','POLYLINE','GEOMETRY','POLYGON',column_name) geometry_type, to_char(srid) srid, COLUMN_NAME FROM all_sdo_geom_metadata WHERE owner = UPPER('" + myowner + "') and table_name = UPPER('" + mytable_name + "') order by COLUMN_NAME"
+	sql = "SELECT owner || ' ' || initcap(replace(table_name,'_',' ')) layer_name, decode(column_name,'POLYGONS','POLYGON','CELL','POLYGON','CORR_CELL','POLYGON','CELLS','POLYGON','BLOCKY_POLYGON','POLYGON','LINES','POLYLINE','SHAPE','POLYGON','DIRECTEDLINE','POLYLINE','LINE','POLYLINE','LINE_SIMPLE','POLYLINE','GEOMETRY','POLYGON',column_name) geometry_type, to_char(srid) srid, COLUMN_NAME FROM all_sdo_geom_metadata WHERE owner = UPPER('" + myowner + "') and table_name = UPPER('" + mytable_name + "') order by COLUMN_NAME"
 	spatialsql =  "SELECT * FROM " + myowner + "." + mytable_name
 	myspatial_table_name = mytable_name
-# print(spatialsql)
-# print(sql)
+
 query_return = oraconn.cursor()
 query_return.execute(sql)
 query_returnrow = query_return.fetchall()
@@ -74,7 +73,8 @@ if not (query_returnrow):
 else:
 	iface.messageBar().pushMessage("Query successful", str(query_returnrow[0]), level=Qgis.Success)
 sql = "SELECT decode(c.table_name,'COUNTRIES','geo_sort',column_name) column_name FROM all_constraints c, all_ind_columns i WHERE c.constraint_name = i.index_name AND c.constraint_type = 'P' AND c.owner = i.table_owner AND c.table_name = i.table_name AND c.table_name = '"+ myspatial_table_name + "'"
-print (sql)
+if displaymsg:
+	print (sql)
 print("Unique Identifier Test...")
 query_identifier = oraconn.cursor()
 query_identifier.execute(sql)
@@ -87,6 +87,7 @@ else:
 	uri.setConnection(myhost, myport, mydb, myusername, mypassword)
 	print(query_identifierrow[0][0])
 	print(query_returnrow[0][3])
+	print(query_returnrow[0][1])
 	if (timeselect):
 		print("In time select...")
 		uri.setDataSource(myusername, mytable_name+"_ACTUAL", query_returnrow[0][3],"",query_identifierrow[0][0])
@@ -124,33 +125,27 @@ else:
 			else:
 				daysback = "90"
 			# note query can also have a \_ in the like
-			if (mytable_name == "GRID_025DD_HEAT" or mytable_name == "GRID_1DD_GPCC_DAY"):
-				ascending = "desc"
-				# daysback = "3"
-			elif (mytable_name == "GRID_025DD_ERA5"):
-				ascending = "asc"
-				# daysback = "7"
-			else:
-				ascending = "asc"
-			#daysback = "90"
-			sql = "SELECT column_name from all_tab_columns where owner = '"+myowner+"' and table_name = '"+mytable_name+"' and (column_name like '%N' || '_' || to_char(sysdate - "+daysback+",'MM') or column_name like '%' || to_char(sysdate - "+daysback+",'MM') || case when to_char(sysdate - "+daysback+",'DD') < 10 then '21' when to_char(sysdate - "+daysback+",'DD') < 20 then '01' else '11' end or column_name like '%' || to_char(sysdate - "+daysback+",'MMDD') or column_name like 'SPI_' || to_char(sysdate - "+daysback+",'MM') || '%') order by column_name "+ascending
-			print(sql)
+			print("Defaulting to "+daysback+ " day back from today")
+			sql = "SELECT max(column_name) from all_tab_columns where owner = '"+myowner+"' and table_name = '"+mytable_name+"' and (column_name like '%N' || '_' || to_char(sysdate - "+daysback+",'MM') or column_name like '%' || to_char(sysdate - "+daysback+",'MM') || case when to_char(sysdate - "+daysback+",'DD') < 10 then '21' when to_char(sysdate - "+daysback+",'DD') < 20 then '01' else '11' end or column_name like '%' || to_char(sysdate - "+daysback+",'MMDD') or column_name like 'SPI_' || to_char(sysdate - "+daysback+",'MM') || '%') order by column_name "+ascending
+			if displaymsg:
+				print(sql)
 			fieldcur = oraconn.cursor()
 			fieldcur.execute(sql)
 			fieldcurrow = fieldcur.fetchall()
 			sql = "SELECT min("+fieldcurrow[0][0]+"),max("+fieldcurrow[0][0]+") from "+myowner+"."+mytable_name+" WHERE year = to_number(to_char(sysdate - "+daysback+",'YYYY'))"
-			print(sql)
+			if displaymsg:
+				print(sql)
 			minmaxcur = oraconn.cursor()
-			print(sql)
 			minmaxcur.execute(sql)
 			minmaxcurrow = minmaxcur.fetchall()
-			print(minmaxcurrow)
+			if displaymsg:
+				print(minmaxcurrow)
 			testresult = ""
+			myrangelist = []
 			if (minmaxcurrow[0][1] == None):
 				print("No data found for "+fieldcurrow[0][0])
 			else:
 				mystep = round((minmaxcurrow[0][1] - minmaxcurrow[0][0]) / 7)
-				myrangelist = []
 				testlist = ["TEMP","RAIN","SPI","ANOMALY","ABSORBED"]
 				test = fieldcurrow[0][0]
 				for teststring in range(0,len(test) - 1):
@@ -230,7 +225,6 @@ else:
 								localmax = 1
 							elif (localmax == 2.5):
 								localmax = mymax
-							#print("Work:" + str(myiter))
 							mylabel = (str(localmin)+ " -- "+str(localmax))
 							print(mylabel)
 							if (localmax == -2):
@@ -261,7 +255,6 @@ else:
 								myred = 128
 								mygreen = 0
 								myblue = 128
-							#print(str(myred) + ","+ str(mygreen)+","+str(myblue))
 							mylabel  = str(localmin) + "--"+ str(localmax)
 							mycolor  = QtGui.QColor()
 							mycolor.setBlue(myblue)
@@ -272,27 +265,26 @@ else:
 							mysymbol.symbolLayer(0).setStrokeColor(mycolor)
 							myrange  = QgsRendererRange(localmin,localmax,mysymbol,mylabel)
 							myrangelist.append(myrange)
-			myrenderer = QgsGraduatedSymbolRenderer('',myrangelist)
-			myclassificationmethod = QgsApplication.classificationMethodRegistry().method("EqualInterval")
-			myrenderer.setClassificationMethod(myclassificationmethod)
-			myrenderer.setClassAttribute(fieldcurrow[0][0])
-			mydblayer.setRenderer(myrenderer)
+			if (len(myrangelist) > 0):
+				myrenderer = QgsGraduatedSymbolRenderer('',myrangelist)
+				myclassificationmethod = QgsApplication.classificationMethodRegistry().method("EqualInterval")
+				myrenderer.setClassificationMethod(myclassificationmethod)
+				myrenderer.setClassAttribute(fieldcurrow[0][0])
+				mydblayer.setRenderer(myrenderer)
 		else:
 			sql = "SELECT  a.column_name , c.owner, c.table_name FROM all_cons_columns a ,all_constraints  b ,all_constraints c WHERE  b.constraint_name = a.constraint_name AND a.table_name = UPPER('"+mytable_name+"') AND  b.table_name = a.table_name  AND  b.owner = a.owner AND  b.constraint_type = 'R' AND c.constraint_name = b.r_constraint_name AND c.table_name IN (SELECT table_name FROM all_tab_columns WHERE column_name = 'RED') order by 1 desc"
-			print(sql)
+			if displaymsg:
+				print(sql)
 			classcur = oraconn.cursor()
 			classcur.execute(sql)
 			classcurrow = classcur.fetchall()
 			if (len(classcurrow) > 0):
-				# sql = "SELECT id, nvl(description,id), ltrim(to_char(red,'xxxx')) || ltrim(to_char(green,'xxxx')) || ltrim(to_char(blue,'xxxx')) from "+classcurrow[0][1] +"."+classcurrow[0][2]+ " where red is not null ORDER BY 1 asc"
-				# print(sql)
 				sql = "SELECT id, nvl(description,id), red, green ,blue from "+classcurrow[0][1] +"."+classcurrow[0][2]+ " where red is not null ORDER BY 1 asc"
 				myclass_renderer = QgsCategorizedSymbolRenderer()
 				classcolor = oraconn.cursor()
 				classcolor.execute(sql)
 				classcolorrow = classcolor.fetchall()
 				for classrec in classcolorrow:
-					#mycolor    = QtGui.QColor('#'+classrec[2])
 					mycolor    = QtGui.QColor()
 					mycolor.setRed(classrec[2])
 					mycolor.setGreen(classrec[3])
@@ -306,8 +298,20 @@ else:
 				mydblayer.setRenderer(myclass_renderer)
 			else:
 				print("No classification found")
+		mymeta = mydblayer.metadata()
+		mymeta.setTitle(query_returnrow[0][0])
+		mymeta.setIdentifier(mytable_name)
+		mymeta.setParentIdentifier("https://drought.emergency.copernicus.eu")
+		mymetacontacts = mymeta.contacts
+		mymeta.setType(query_returnrow[0][1])
+		mymeta.setLanguage("English")
+		sql = "SELECT comments FROM all_tab_comments where owner = '"+myowner+"' AND table_name = '"+mytable_name+"'"
+		mymetasql = oraconn.cursor()
+		mymetasql.execute(sql)
+		mymetasqlrow = mymetasql.fetchone()
+		if (len(mymetasqlrow) > 0):
+			mymeta.setAbstract(mymetasqlrow[0])
+		mydblayer.setMetadata(mymeta)
 		iface.messageBar().pushMessage(mydblayer.name(), "Added successful to the Table of Contents", level=Qgis.Success)
 		QgsProject.instance().addMapLayer(mydblayer)
 		iface.mainWindow().setWindowTitle("Drought QGIS")
-
-
