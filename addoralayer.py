@@ -126,7 +126,7 @@ else:
 				daysback = "90"
 			# note query can also have a \_ in the like
 			print("Defaulting to "+daysback+ " day back from today")
-			sql = "SELECT max(column_name) from all_tab_columns where owner = '"+myowner+"' and table_name = '"+mytable_name+"' and (column_name like '%N' || '_' || to_char(sysdate - "+daysback+",'MM') or column_name like '%' || to_char(sysdate - "+daysback+",'MM') || case when to_char(sysdate - "+daysback+",'DD') < 10 then '21' when to_char(sysdate - "+daysback+",'DD') < 20 then '01' else '11' end or column_name like '%' || to_char(sysdate - "+daysback+",'MMDD') or column_name like 'SPI_' || to_char(sysdate - "+daysback+",'MM') || '%') order by column_name "+ascending
+			sql = "SELECT max(column_name) from all_tab_columns where owner = '"+myowner+"' and table_name = '"+mytable_name+"' and (column_name like '%N' || '_' || to_char(sysdate - "+daysback+",'MM') or column_name like '%' || to_char(sysdate - "+daysback+",'MM') || case when to_char(sysdate - "+daysback+",'DD') < 10 then '21' when to_char(sysdate - "+daysback+",'DD') < 20 then '01' else '11' end or column_name like '%' || to_char(sysdate - "+daysback+",'MMDD') or column_name like 'SPI_' || to_char(sysdate - "+daysback+",'MM') || '%')"
 			if displaymsg:
 				print(sql)
 			fieldcur = oraconn.cursor()
