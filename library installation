@@ -1,4 +1,5 @@
-To install a python library in the QGIS Windows python environment:
+# To install a python library in the QGIS Windows python environment:
+# To find the old MS-DOS 8.3 convention path use DIR /x on the directory of your windows system
 
 set HTTPS_PROXY=http://username:password@proxyname:proxyport
 set  HTTP_PROXY=http://username:password@proxyname:proxyport
