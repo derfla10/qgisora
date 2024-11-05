@@ -53,7 +53,7 @@ The table related to this with a time series is GRID_1DD_parametername, in which
 ,cell       mdsys.sdo_geometry not null
 ,corr_cell  mdsys.sdo_geometry)   # empty if ocean for example
 
-<br>table GRID_1DD_MONTHY_RAIN(
+<br>table GRID_1DD_MONTHLY_RAIN(
  g1d_id     number(5) not null
 ,year       number(4) not null
 ,rain_01    number
