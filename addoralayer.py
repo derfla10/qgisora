@@ -12,9 +12,10 @@ displaymsg = False
 ########################################################
 myconnectdb = myusername+"/"+mypassword+"@"+myhost+":"+myport+"/"+mydb
 oraconn = cx_Oracle.connect(myconnectdb)
-iface.messageBar().pushMessage("Database", "Succesfully connected to "+myusername+" at "+mydb, level=Qgis.Info)
+iface.messageBar().pushMessage("Database", "Successful connected to "+myusername+" at "+mydb, level=Qgis.Info)
 print (oraconn)
 timeselect = False
+
 qlist    = []
 qid       = QInputDialog()
 qmode    = QLineEdit.Normal
@@ -28,6 +29,7 @@ stablelistrow = stablelist.fetchall()
 for stable in stablelistrow:
 	qlist.append(stable[0])
 qtext, qok = QInputDialog.getItem(qid, qtitle, qlabel,qlist)
+#qtext, qok = QInputDialog.getText(qid, qtitle, qlabel, qmode, qdefault)
 
 if (qok):
 	mytable_name = qtext
@@ -91,7 +93,7 @@ else:
 	if (timeselect):
 		print("In time select...")
 		uri.setDataSource(myusername, mytable_name+"_ACTUAL", query_returnrow[0][3],"",query_identifierrow[0][0])
-	elif(mytable_name == "GRID_025DD_LANDCOVER"):
+	elif(mytable_name == "GRID_025DD_LANDCOVER" or mytable_name == "GRID_025DD_TEMPERATURE_STATS"):
 		uri.setDataSource(myusername, mytable_name, query_returnrow[0][3],"",query_identifierrow[0][0])
 	else:
 		uri.setDataSource(myowner, mytable_name, query_returnrow[0][3],"",query_identifierrow[0][0])
@@ -118,20 +120,41 @@ else:
 			totcurrow = totcur.fetchone()
 			if (totcurrow[0] > 366):
 				daysback = "6"
+				interval = 1
 			elif (totcurrow[0] > 36) and (mytable_name != "GRID_1DD_SPI"):
 				daysback = "16"
+				interval = 10
 			elif (totcurrow[0] > 12):
 				daysback = "36"
+				interval = 30
 			else:
 				daysback = "90"
+				interval = 30
 			# note query can also have a \_ in the like
+			datafound = False
 			print("Defaulting to "+daysback+ " day back from today")
-			sql = "SELECT max(column_name) from all_tab_columns where owner = '"+myowner+"' and table_name = '"+mytable_name+"' and (column_name like '%N' || '_' || to_char(sysdate - "+daysback+",'MM') or column_name like '%' || to_char(sysdate - "+daysback+",'MM') || case when to_char(sysdate - "+daysback+",'DD') < 10 then '21' when to_char(sysdate - "+daysback+",'DD') < 20 then '01' else '11' end or column_name like '%' || to_char(sysdate - "+daysback+",'MMDD') or column_name like 'SPI_' || to_char(sysdate - "+daysback+",'MM') || '%')"
-			if displaymsg:
-				print(sql)
-			fieldcur = oraconn.cursor()
-			fieldcur.execute(sql)
-			fieldcurrow = fieldcur.fetchall()
+			while not datafound:
+				sql = "SELECT max(column_name) from all_tab_columns where owner = '"+myowner+"' and table_name = '"+mytable_name+"' and (column_name like '%N' || '_' || to_char(sysdate - "+daysback+",'MM') or column_name like '%' || to_char(sysdate - "+daysback+",'MM') || case when to_char(sysdate - "+daysback+",'DD') < 10 then '21' when to_char(sysdate - "+daysback+",'DD') < 20 then '01' else '11' end or column_name like '%' || to_char(sysdate - "+daysback+",'MMDD') or column_name like 'SPI_' || to_char(sysdate - "+daysback+",'MM') || case when to_char(sysdate - 16,'DD') < 10 then '21' when to_char(sysdate - 16,'DD') < 20 then '01' else '11' end || '%_03%' or column_name like 'SPI_' || to_char(sysdate - 16,'MM') || '03')"
+				if displaymsg:
+					print(sql)
+				fieldcur = oraconn.cursor()
+				fieldcur.execute(sql)
+				fieldcurrow = fieldcur.fetchall()
+				sql = "SELECT "+ fieldcurrow[0][0] + " FROM "+myowner+"."+mytable_name+" WHERE year = to_number(to_char(sysdate - "+daysback+",'YYYY')) and "+fieldcurrow[0][0]+ " IS NOT NULL and rownum < 11"
+				if displaymsg: 
+					print(sql)
+				filledcur = oraconn.cursor()
+				filledcur.execute(sql)
+				filledcurrow = filledcur.fetchall()
+				for filled in filledcurrow:
+					if not (filled[0] == None):
+						datafound = True
+				if not datafound:
+					daysback = str(int(daysback) + interval)
+					print("Checking "+daysback+ " days back for data")
+				if (int(daysback) > 365):
+					break
+			
 			sql = "SELECT min("+fieldcurrow[0][0]+"),max("+fieldcurrow[0][0]+") from "+myowner+"."+mytable_name+" WHERE year = to_number(to_char(sysdate - "+daysback+",'YYYY'))"
 			if displaymsg:
 				print(sql)
@@ -144,6 +167,24 @@ else:
 			myrangelist = []
 			if (minmaxcurrow[0][1] == None):
 				print("No data found for "+fieldcurrow[0][0])
+			elif (minmaxcurrow[0][0] == 0 and minmaxcurrow[0][1] == 8):
+				sql = "select id, description, red, green, blue from index_colors order by id"
+				cdicolorcur = oraconn.cursor()
+				cdicolorcur.execute(sql)
+				cdicolorcurrow = cdicolorcur.fetchall()
+				myclass_renderer = QgsCategorizedSymbolRenderer()
+				for cdicolor in cdicolorcurrow:
+					mycolor    = QtGui.QColor()
+					mycolor.setRed(cdicolor[2])
+					mycolor.setGreen(cdicolor[3])
+					mycolor.setBlue(cdicolor[4])
+					mysymbol   = QgsSymbol.defaultSymbol(mydblayer.geometryType())
+					mysymbol.setColor(mycolor)
+					mycategory = QgsRendererCategory(cdicolor[0], mysymbol, cdicolor[1])
+					mysymbol.symbolLayer(0).setStrokeColor(mycolor)
+					myclass_renderer.addCategory(mycategory)
+				myclass_renderer.setClassAttribute(fieldcurrow[0][0])
+				mydblayer.setRenderer(myclass_renderer)
 			else:
 				mystep = round((minmaxcurrow[0][1] - minmaxcurrow[0][0]) / 7)
 				testlist = ["TEMP","RAIN","SPI","ANOMALY","ABSORBED"]
@@ -300,6 +341,7 @@ else:
 				print("No classification found")
 		mymeta = mydblayer.metadata()
 		mymeta.setTitle(query_returnrow[0][0])
+		#mymeta.setRights("Use only within the Institution")
 		mymeta.setIdentifier(mytable_name)
 		mymeta.setParentIdentifier("https://drought.emergency.copernicus.eu")
 		mymetacontacts = mymeta.contacts
