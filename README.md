@@ -85,7 +85,8 @@ You can create this record as QGIS selection user:
   <ol><li> to minus <b>six</b> days from system date for daily data (convention MMDD)</li>
   <li>to minus <b>thirtysix</b> days from system date for monthly data (convention MM)</li>
   <li>to minus <b>sixteen</b> days from system date for 10 daily data (convention MMTT where TT is 01,11,21)</li> </ol>
-This implies that the system expects data to be integrated with a maximum of six days delay.
+This implies that the system expects data to be integrated with a maximum of six days delay. 
+If data are missing then the application will search back to a maximum of a year.
 
 <br>If a column contains the word 'RAIN' a graduated color scheme based on blue will be generated. The class for zero rainfall will be a separate class.
 <br>If a column contains the word 'TEMP' a graduated color schema based on red will be generated.
