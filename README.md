@@ -78,7 +78,7 @@ SELECT id, corr_cell, r.*
 <br>QGIS requires an entry in the USER_SDO_GEOM_METADATA system table in order to visualize this view.
 You can create this record as QGIS selection user:
 
-<br>insert into user_sdo_geom_metadata select 'GRID_1DD_MONTHLY_ACTUAL',column_name, diminfo, srid
+<br>insert into user_sdo_geom_metadata select 'GRID_1DD_MONTHLY_RAIN_ACTUAL',column_name, diminfo, srid
      from    all_sdo_geom_metadata where table_name = 'GRID_1DD' and column_name = 'CORR_CELL';
 
 <br>The application will default for visualizing data to a selected column, and classify the minimum and maximum accordingly. 
