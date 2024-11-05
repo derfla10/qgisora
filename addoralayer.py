@@ -93,7 +93,7 @@ else:
 	if (timeselect):
 		print("In time select...")
 		uri.setDataSource(myusername, mytable_name+"_ACTUAL", query_returnrow[0][3],"",query_identifierrow[0][0])
-	elif(mytable_name == "GRID_025DD_LANDCOVER" or mytable_name == "GRID_025DD_TEMPERATURE_STATS"):
+	elif(mytable_name == "GRID_025DD_LANDCOVER" or mytable_name == "GRID_025DD_TEMPERATURE_STATS" or table_name = "GRID_025DD_TEMPERATURE_WAVES"):
 		uri.setDataSource(myusername, mytable_name, query_returnrow[0][3],"",query_identifierrow[0][0])
 	else:
 		uri.setDataSource(myowner, mytable_name, query_returnrow[0][3],"",query_identifierrow[0][0])
