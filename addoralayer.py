@@ -19,7 +19,7 @@ timeselect = False
 qlist    = []
 qid       = QInputDialog()
 qmode    = QLineEdit.Normal
-qdefault = mytable_name
+qdefault = ""
 qtitle   = "Spatial Table to display"
 qlabel   = "Spatial Table Name"
 sql = "SELECT distinct table_name, owner from all_sdo_geom_metadata where owner != user UNION select table_name, owner from all_tables where table_name like 'GRID_%DD_%' order by 2,1"
