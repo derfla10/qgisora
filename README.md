@@ -1,7 +1,7 @@
 # qgisora
 Display Oracle Spatial data in QGIS using a datamodel allowing to store classifications and timeseries
 
-<br>The application presumes that the library cx_Oracle can be loaded.
+<br>The application presumes that the library oracledb can be loaded.
 
 <br>The application assumes some rules on the naming of tables and columns as well as the structure of color lookup tables and timeseries
 
