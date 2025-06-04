@@ -7,7 +7,7 @@
 # Date    : 4 July 2025                                 #
 # Revision: Adapted to Python QGIS 3.34 which does not  #
 #           support cx_oracle, instead oracledb is used #
-#           Setwkp type is not automated by QGIS        #
+#           Setwkp type is now automated by QGIS        #
 #########################################################
 import sys
 import oracledb
