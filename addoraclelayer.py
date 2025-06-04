@@ -15,11 +15,11 @@ from qgis.PyQt import QtGui
 from qgis.utils import iface
 
 ########################################################
-myhost     = "siprodb01p-dars.jrc.it"
-mydb       = "drought"
-myport     = "1529"
-myusername = "ARCGISPRO"
-mypassword = "read0nly4arc"
+myhost     = "host"
+mydb       = "dbname"
+myport     = "1530"
+myusername = "username"
+mypassword = "password"
 displaymsg = True 
 
 # myconnectdb = myusername+"/"+mypassword+"@"+myhost+":"+myport+"/"+mydb
