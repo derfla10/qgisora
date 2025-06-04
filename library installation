@@ -3,9 +3,8 @@
 
 set HTTPS_PROXY=http://username:password@proxyname:proxyport
 set  HTTP_PROXY=http://username:password@proxyname:proxyport
-set PYTHONPATH=C:\PROGRA~1\QGIS32~1.1\apps\Python39
-set PYTHONHOME=C:\PROGRA~1\QGIS32~1.1\apps\Python39
+set PYTHONPATH=C:\PROGRA~1\QGIS33~1.15\apps\Python312
+set PYTHONHOME=C:\PROGRA~1\QGIS33~1.15\apps\Python312
 
-
-C:\Program Files\QGIS 3.28.1\apps\Python39\Scripts>pip3.9.exe install cx_Oracle 
+C:\Program Files\QGIS 3.34.15\apps\Python312>python.exe -m pip install --user --proxy "http://username:password@proxyname:proxyport oracledb
 
